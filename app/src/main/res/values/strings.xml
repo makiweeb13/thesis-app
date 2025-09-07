@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Thesis App</string>
+    <string name="preview_of_captured_image">Preview of captured image</string>
+    <string name="capture_image">Capture Image</string>
 </resources>
