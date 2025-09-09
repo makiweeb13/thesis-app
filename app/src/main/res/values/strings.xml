@@ -2,4 +2,6 @@
     <string name="app_name">Thesis App</string>
     <string name="preview_of_captured_image">Preview of captured image</string>
     <string name="capture_image">Capture Image</string>
+    <string name="weight">Weight:</string>
+    <string name="class_label">Class:</string>
 </resources>

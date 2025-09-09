@@ -36,7 +36,18 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.media3.common)
+    implementation(libs.cronet.embedded)
+    implementation(libs.tracing.perfetto.handshake)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    // Retrofit
+    implementation(libs.retrofit) // Use the latest version
+    implementation(libs.converter.gson) // For Gson parsing
+
+    // OkHttp (Retrofit uses this, good to have explicit control or for logging interceptor)
+    implementation(libs.okhttp) // Use the latest version
+    implementation(libs.logging.interceptor) // Optional, for logging requests/responses
+    implementation(libs.activity.ktx) // Or the latest version
+
 }
