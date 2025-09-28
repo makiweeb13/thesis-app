@@ -4,82 +4,109 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:padding="16dp">
 
     <Button
         android:id="@+id/buttonCapture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/capture_image"
+        app:backgroundTint="@color/grayish_blue"
+        android:textColor="?android:attr/textColorPrimaryInverse"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="32dp"/>
+        android:layout_marginTop="16dp" />
 
-    <ImageView
-        android:id="@+id/imageViewPreview"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardViewImageContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
-        android:contentDescription="@string/preview_of_captured_image"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
         app:layout_constraintTop_toBottomOf="@id/buttonCapture"
         app:layout_constraintBottom_toTopOf="@+id/textViewFishClassLabel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:scaleType="fitCenter" />
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <ImageView
+            android:id="@+id/imageViewPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/preview_of_captured_image"
+            android:scaleType="fitCenter" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Fish Class Information -->
     <TextView
         android:id="@+id/textViewFishClassLabel"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/class_label"
-        android:textStyle="bold"
+        android:textSize="16sp"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/text_label_color"
+        android:textAlignment="center"
+        android:textStyle="normal"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/textViewFishWeightLabel"
-        android:layout_marginStart="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/textViewFishClassValue"
         android:layout_marginBottom="4dp"
-        tools:visibility="visible"/> <!-- For preview in layout editor -->
+        tools:visibility="visible"/>
 
     <TextView
         android:id="@+id/textViewFishClassValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintStart_toEndOf="@id/textViewFishClassLabel"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBaseline_toBaselineOf="@id/textViewFishClassLabel"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="16dp"
-        tools:text="Tilapia"
-        tools:visibility="visible"/> <!-- For preview in layout editor -->
-
-    <TextView
-        android:id="@+id/textViewFishWeightLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/weight"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif-medium"
+        android:textColor="@color/text_value_color"
+        android:textAlignment="center"
         android:textStyle="bold"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginStart="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/textViewFishWeightLabel"
         android:layout_marginBottom="16dp"
-        tools:visibility="visible"/> <!-- For preview in layout editor -->
+        tools:text="Tilapia"
+        tools:visibility="visible"/>
+
+    <!-- Fish Weight Information -->
+    <TextView
+        android:id="@+id/textViewFishWeightLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/weight"
+        android:textSize="16sp"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/text_label_color"
+        android:textAlignment="center"
+        android:textStyle="normal"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/textViewFishWeightValue"
+        android:layout_marginBottom="4dp"
+        tools:visibility="visible"/>
 
     <TextView
         android:id="@+id/textViewFishWeightValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif-medium"
+        android:textColor="@color/text_value_color"
+        android:textAlignment="center"
+        android:textStyle="bold"
         android:visibility="gone"
-        app:layout_constraintStart_toEndOf="@id/textViewFishWeightLabel"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBaseline_toBaselineOf="@id/textViewFishWeightLabel"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="16dp"
         tools:text="500g"
         tools:visibility="visible"/>
 

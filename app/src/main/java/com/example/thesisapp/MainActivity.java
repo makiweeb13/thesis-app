@@ -170,12 +170,10 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             // Continue only if the File was successfully created
-            if (photoFile != null) {
-                currentPhotoUri = FileProvider.getUriForFile(this,
-                        getApplicationContext().getPackageName() + ".fileprovider", // Authority must match AndroidManifest
-                        photoFile);
-                takePictureLauncher.launch(currentPhotoUri); // Use the modern launcher
-            }
+            currentPhotoUri = FileProvider.getUriForFile(this,
+                    getApplicationContext().getPackageName() + ".fileprovider", // Authority must match AndroidManifest
+                    photoFile);
+            takePictureLauncher.launch(currentPhotoUri); // Use the modern launcher
         } else {
             Toast.makeText(this, "No camera app found", Toast.LENGTH_SHORT).show();
         }
@@ -255,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Create RequestBody instance from file
-// Corrected line
+        // Corrected line
         String mimeType = getContentResolver().getType(imageUri);
         RequestBody requestFile = RequestBody.create(imageFile, MediaType.parse(mimeType != null ? mimeType : "image/*"));
         // MultipartBody.Part is used to send also the actual file name
@@ -324,9 +322,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<FishDetailsResponse> call, Throwable t) {
-                // Handle failure (e.g., network error, an exception during processing)
-                // Log.e(TAG, "Network call failed: " + t.getMessage(), t);
-                // Toast.makeText(MainActivity.this, "Network request failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
+//                 Handle failure (e.g., network error, an exception during processing)
+                 Log.e(TAG, "Network call failed: " + t.getMessage(), t);
+                 Toast.makeText(MainActivity.this, "Network request failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
 
                 // Hide loading indicator
                 // progressBar.setVisibility(View.GONE);
