@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
 
-    private static final String BASE_URL = "http://192.168.1.2:8000/"; // IMPORTANT: Must end with a slash '/'
+    private static final String BASE_URL = "http://13.236.148.69:8000/"; // IMPORTANT: Must end with a slash '/'
     private static Retrofit retrofit = null;
 
     public static Retrofit getClient() {

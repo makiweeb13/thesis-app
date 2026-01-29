@@ -1,7 +1,8 @@
 <resources>
-    <string name="app_name">Thesis App</string>
+    <string name="app_name">Milkfish Size and Weight</string>
     <string name="preview_of_captured_image">Preview of captured image</string>
     <string name="capture_image">Capture Image</string>
+    <string name="upload_image">Upload Image</string>
     <string name="weight">Weight:</string>
     <string name="class_label">Class:</string>
 </resources>

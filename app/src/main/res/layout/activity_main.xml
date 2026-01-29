@@ -7,17 +7,37 @@
     tools:context=".MainActivity"
     android:padding="16dp">
 
-    <Button
-        android:id="@+id/buttonCapture"
+    <!-- This LinearLayout will hold both buttons -->
+    <LinearLayout
+        android:id="@+id/buttonContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/capture_image"
-        app:backgroundTint="@color/grayish_blue"
-        android:textColor="?android:attr/textColorPrimaryInverse"
+        android:orientation="horizontal"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/buttonCapture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/capture_image"
+            app:backgroundTint="@color/grayish_blue"
+            android:textColor="?android:attr/textColorPrimaryInverse"
+            android:layout_marginEnd="8dp"/> <!-- Added margin to separate buttons -->
+
+        <!-- The new "Upload Image" button -->
+        <Button
+            android:id="@+id/buttonUpload"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/upload_image"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_marginStart="8dp"/> <!-- Added margin to separate buttons -->
+
+    </LinearLayout>
+
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardViewImageContainer"
@@ -27,7 +47,7 @@
         android:layout_marginBottom="24dp"
         app:cardCornerRadius="8dp"
         app:cardElevation="4dp"
-        app:layout_constraintTop_toBottomOf="@id/buttonCapture"
+        app:layout_constraintTop_toBottomOf="@id/buttonContainer"
         app:layout_constraintBottom_toTopOf="@+id/textViewFishClassLabel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -48,7 +68,7 @@
         android:text="@string/class_label"
         android:textSize="16sp"
         android:fontFamily="sans-serif"
-        android:textColor="@color/text_label_color"
+        android:textColor="@color/white"
         android:textAlignment="center"
         android:textStyle="normal"
         android:visibility="gone"
@@ -64,7 +84,7 @@
         android:layout_height="wrap_content"
         android:textSize="20sp"
         android:fontFamily="sans-serif-medium"
-        android:textColor="@color/text_value_color"
+        android:textColor="@color/white"
         android:textAlignment="center"
         android:textStyle="bold"
         android:visibility="gone"
@@ -83,7 +103,7 @@
         android:text="@string/weight"
         android:textSize="16sp"
         android:fontFamily="sans-serif"
-        android:textColor="@color/text_label_color"
+        android:textColor="@color/white"
         android:textAlignment="center"
         android:textStyle="normal"
         android:visibility="gone"
@@ -99,7 +119,7 @@
         android:layout_height="wrap_content"
         android:textSize="20sp"
         android:fontFamily="sans-serif-medium"
-        android:textColor="@color/text_value_color"
+        android:textColor="@color/white"
         android:textAlignment="center"
         android:textStyle="bold"
         android:visibility="gone"

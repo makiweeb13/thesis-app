@@ -6,6 +6,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -20,6 +21,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.OptIn;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -35,17 +37,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
-
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.activity.result.contract.ActivityResultContracts.TakePicture;
-import okhttp3.MediaType;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int MIN_IMAGE_WIDTH = 640;
+    private static final int MIN_IMAGE_HEIGHT = 480;
     private static final int REQUEST_IMAGE_CAPTURE_LEGACY = 1; // For older onActivityResult
     private ImageView imageView;
     private Uri currentPhotoUri; // To store the URI of the captured image
@@ -56,17 +57,12 @@ public class MainActivity extends AppCompatActivity {
 
     // --- Modern approach using ActivityResultLauncher (Recommended) ---
     private final ActivityResultLauncher<Uri> takePictureLauncher =
-            registerForActivityResult(new TakePicture(), result -> {
+            registerForActivityResult(new ActivityResultContracts.TakePicture(), result -> {
                 if (result != null && result) { // 'result' is true if picture was taken and saved to URI
                     if (currentPhotoUri != null) {
                         imageView.setImageURI(currentPhotoUri);
-                        // You can now use currentPhotoUri to access the full-resolution image
-                        Toast.makeText(this, "Image captured and saved to: " + currentPhotoUri.toString(), Toast.LENGTH_LONG).show();
-                        processImageAndFetchFishDetails(currentPhotoUri);
-                    } else {
-                        // This case might happen if the camera app doesn't stick to the contract
-                        Toast.makeText(this, "Image URI is null after capture.", Toast.LENGTH_SHORT).show();
-                        hideFishDetails();
+                        Toast.makeText(this, "Image captured!", Toast.LENGTH_SHORT).show();
+                        checkImageQualityAndProceed(currentPhotoUri);
                     }
                 } else {
                     Toast.makeText(this, "Image capture failed or was cancelled.", Toast.LENGTH_SHORT).show();
@@ -84,6 +80,20 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Failed to get image preview.", Toast.LENGTH_SHORT).show();
                 }
                 hideFishDetails();
+            });
+
+    // *** NEW: Launcher for selecting an image from the gallery ***
+    private final ActivityResultLauncher<String> selectImageLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    // An image was selected from the gallery
+                    imageView.setImageURI(uri);
+                    Toast.makeText(this, "Image selected!", Toast.LENGTH_SHORT).show();
+                    checkImageQualityAndProceed(uri);
+                } else {
+                    Toast.makeText(this, "No image selected.", Toast.LENGTH_SHORT).show();
+                    hideFishDetails();
+                }
             });
 
 
@@ -113,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
 
         imageView = findViewById(R.id.imageViewPreview); // Add this ID to your ImageView in XML
         Button captureButton = findViewById(R.id.buttonCapture);   // Add this ID to your Button in XML
+        Button uploadButton = findViewById(R.id.buttonUpload); // *** Get the new upload button
 
         textViewFishClassLabel = findViewById(R.id.textViewFishClassLabel);
         textViewFishClassValue = findViewById(R.id.textViewFishClassValue);
@@ -123,6 +134,12 @@ public class MainActivity extends AppCompatActivity {
             // Check permissions before launching camera
             // checkPermissionsAndLaunchCamera();
             openCameraToCaptureImage();
+        });
+
+        // *** Set OnClickListener for the new upload button ***
+        uploadButton.setOnClickListener(v -> {
+            // Launch the gallery to select an image
+            selectImageLauncher.launch("image/*");
         });
     }
 
@@ -177,21 +194,49 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "No camera app found", Toast.LENGTH_SHORT).show();
         }
+    }
 
-        // Option 2: Get a small bitmap preview (thumbnail) directly in the result.
-        // This is simpler if you don't need the full-resolution image or don't want to handle files.
-        // Comment out Option 1 and uncomment this if you prefer this way:
-        /*
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            try {
-                takePicturePreviewLauncher.launch(null); // Pass null as we don't specify output URI
-            } catch (ActivityNotFoundException e) {
-                Toast.makeText(this, "No camera app found", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Toast.makeText(this, "No camera app found", Toast.LENGTH_SHORT).show();
+    // *** NEW: Method to check image quality before processing ***
+    private void checkImageQualityAndProceed(Uri imageUri) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true; // This will only decode the bounds, not the full bitmap
+
+        try (InputStream inputStream = getContentResolver().openInputStream(imageUri)) {
+            BitmapFactory.decodeStream(inputStream, null, options);
+        } catch (IOException e) {
+            Log.e(TAG, "Error checking image dimensions: " + e.getMessage(), e);
+            Toast.makeText(this, "Could not read image details. Proceeding anyway.", Toast.LENGTH_SHORT).show();
+            processImageAndFetchFishDetails(imageUri); // Proceed as a fallback
+            return;
         }
-        */
+
+        int imageWidth = options.outWidth;
+        int imageHeight = options.outHeight;
+
+        Log.d(TAG, "Image dimensions: " + imageWidth + "x" + imageHeight);
+
+        if (imageWidth < MIN_IMAGE_WIDTH || imageHeight < MIN_IMAGE_HEIGHT) {
+            // Image quality is below threshold, show a dialog
+            new AlertDialog.Builder(this)
+                    .setTitle("Low Image Quality")
+                    .setMessage("The captured image resolution (" + imageWidth + "x" + imageHeight +
+                            ") might be too low for accurate results. Do you want to proceed anyway?")
+                    .setPositiveButton("Proceed Anyway", (dialog, which) -> {
+                        // User wants to proceed with the current image
+                        processImageAndFetchFishDetails(imageUri);
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        // User cancels the upload
+                        Toast.makeText(this, "Upload cancelled.", Toast.LENGTH_SHORT).show();
+                        hideFishDetails();
+                        imageView.setImageURI(null); // Clear preview
+                    })
+                    .setCancelable(false) // Prevent dismissing by tapping outside
+                    .show();
+        } else {
+            // Image quality is acceptable, proceed to upload
+            processImageAndFetchFishDetails(imageUri);
+        }
     }
 
 
@@ -210,11 +255,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        /* prefix */
-        /* suffix */
-        /* directory */
-        // Save a file: path for use with ACTION_VIEW intents (not needed for ACTION_IMAGE_CAPTURE directly)
-        // currentPhotoPath = image.getAbsolutePath(); // Not strictly needed if using URI
         return File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpg",         /* suffix */
@@ -227,66 +267,41 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Attempting to process image: " + imageUri.toString());
         Toast.makeText(this, "Processing image and fetching details...", Toast.LENGTH_SHORT).show();
 
-        // Show some loading indicator if you have one
-        // progressBar.setVisibility(View.VISIBLE);
-//        groupFishDetails.setVisibility(View.GONE); // Hide previous details
-//        textViewPlaceholder.setText("Processing..."); // Update placeholder
-//        textViewPlaceholder.setVisibility(View.VISIBLE);
-
-
         File imageFile = null;
         try {
-            // Create a temporary file from the content URI to upload
-            // This is one way; alternatives exist depending on exact URI type and permissions
             imageFile = createFileFromUri(imageUri, "upload_image.jpg");
             if (!imageFile.exists()) {
                 Log.e(TAG, "Failed to create file from URI or file does not exist.");
                 Toast.makeText(this, "Error preparing image for upload.", Toast.LENGTH_LONG).show();
-                hideFishDetails(); // Or show placeholder with error
+                hideFishDetails();
                 return;
             }
         } catch (IOException e) {
             Log.e(TAG, "IOException while creating file from URI: " + e.getMessage(), e);
             Toast.makeText(this, "Error preparing image file: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            hideFishDetails(); // Or show placeholder with error
+            hideFishDetails();
             return;
         }
 
-        // Create RequestBody instance from file
-        // Corrected line
         String mimeType = getContentResolver().getType(imageUri);
         RequestBody requestFile = RequestBody.create(imageFile, MediaType.parse(mimeType != null ? mimeType : "image/*"));
-        // MultipartBody.Part is used to send also the actual file name
-        MultipartBody.Part body = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile); // "imageFile" is the name of the part in your API
+        MultipartBody.Part body = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
 
-        // Example for another part (e.g., API Key)
-        String yourApiKey = "YOUR_ACTUAL_API_KEY"; // Replace with your actual API key or get it securely
+        String yourApiKey = "YOUR_ACTUAL_API_KEY";
         RequestBody apiKeyPart = RequestBody.create(MediaType.parse("text/plain"), yourApiKey);
 
 
         ApiService apiService = RetrofitClient.getApiService();
-        Call<FishDetailsResponse> call = apiService.uploadImageAndGetDetails(body, apiKeyPart); // Pass the parts
+        Call<FishDetailsResponse> call = apiService.uploadImageAndGetDetails(body, apiKeyPart);
 
-        // Store the file to delete it after the call
-        final File finalImageFile = imageFile;
-
-        // Inside your processImageAndFetchFishDetails method or wherever the network call is made
-
-        call.enqueue(new retrofit2.Callback<FishDetailsResponse>() { // Use retrofit2.Callback
+        call.enqueue(new retrofit2.Callback<FishDetailsResponse>() {
             @Override
             public void onResponse(@NonNull Call<FishDetailsResponse> call, @NonNull Response<FishDetailsResponse> response) {
-                // Hide loading indicator
-                // progressBar.setVisibility(View.GONE);
-
                 if (response.isSuccessful() && response.body() != null) {
                     FishDetailsResponse fishDetails = response.body();
-                    Log.d(TAG, "API call successful. Response: " + fishDetails.toString()); // Log the parsed object
-
-                    // textViewFishClassValue.setText(fishDetails.getFishClass());
-                    // textViewFishWeightValue.setText(String.valueOf(fishDetails.getWeight()));
-                    // showFishDetails(); // Make your details TextViews visible
+                    Log.d(TAG, "API call successful. Response: " + fishDetails.toString());
                     Toast.makeText(MainActivity.this, "Fish details received!", Toast.LENGTH_SHORT).show();
-                    // For example:
+
                     if (fishDetails.getFishClass() != null) {
                         textViewFishClassValue.setText(fishDetails.getFishClass());
                         textViewFishClassLabel.setVisibility(View.VISIBLE);
@@ -303,39 +318,28 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                 } else {
-                    // Handle API error (e.g., response.code(), response.errorBody())
-                    // Log.e(TAG, "API Error: " + response.code() + " - " + response.message());
                     try {
                         if (response.errorBody() != null) {
-                            // Log.e(TAG, "Error Body: " + response.errorBody().string());
                             Toast.makeText(MainActivity.this, "Error: " + response.code() + " " + response.errorBody().string(), Toast.LENGTH_LONG).show();
                         } else {
                             Toast.makeText(MainActivity.this, "Error: " + response.code() + " " + response.message(), Toast.LENGTH_LONG).show();
                         }
                     } catch (IOException e) {
-                        // Log.e(TAG, "Error parsing error body", e);
                         Toast.makeText(MainActivity.this, "Error: " + response.code() + " and error parsing failed.", Toast.LENGTH_LONG).show();
                     }
-                    hideFishDetails(); // Or show placeholder with error
+                    hideFishDetails();
                 }
             }
 
             @Override
             public void onFailure(Call<FishDetailsResponse> call, Throwable t) {
-//                 Handle failure (e.g., network error, an exception during processing)
-                 Log.e(TAG, "Network call failed: " + t.getMessage(), t);
-                 Toast.makeText(MainActivity.this, "Network request failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
-
-                // Hide loading indicator
-                // progressBar.setVisibility(View.GONE);
-                hideFishDetails(); // Or show placeholder with error
-                // textViewPlaceholder.setText("Failed to fetch details. Check connection.");
-                // textViewPlaceholder.setVisibility(View.VISIBLE);
+                Log.e(TAG, "Network call failed: " + t.getMessage(), t);
+                Toast.makeText(MainActivity.this, "Network request failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                hideFishDetails();
             }
         });
     }
 
-    // Helper method to create a file from a content URI (can be complex depending on URI source)
     @OptIn(markerClass = UnstableApi.class)
     private File createFileFromUri(Uri contentUri, String fileName) throws IOException {
         File tempFile = null;
@@ -348,12 +352,11 @@ public class MainActivity extends AppCompatActivity {
                 throw new IOException("Unable to open input stream from URI: " + contentUri);
             }
 
-            // Create a temporary file in the app's cache directory
             File cacheDir = getApplicationContext().getCacheDir();
             tempFile = new File(cacheDir, fileName);
 
             outputStream = new FileOutputStream(tempFile);
-            byte[] buffer = new byte[1024 * 4]; // 4KB buffer
+            byte[] buffer = new byte[1024 * 4];
             int read;
             while ((read = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, read);
@@ -398,30 +401,23 @@ public class MainActivity extends AppCompatActivity {
             textViewFishWeightLabel.setVisibility(View.GONE);
             textViewFishWeightValue.setVisibility(View.GONE);
 
-            // Optionally clear the text
             textViewFishClassValue.setText("");
             textViewFishWeightValue.setText("");
         }
     }
 
-    // --- Legacy onActivityResult (if not using ActivityResultLauncher) ---
-    // You can remove this if you are exclusively using ActivityResultLaunchers
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data); // Important for Fragment results
+        super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_IMAGE_CAPTURE_LEGACY && resultCode == RESULT_OK) {
-            // Option 1: If you provided EXTRA_OUTPUT (currentPhotoUri will be set)
             if (currentPhotoUri != null) {
                 imageView.setImageURI(currentPhotoUri);
                 Toast.makeText(this, "Image (legacy) saved to: " + currentPhotoUri.toString(), Toast.LENGTH_LONG).show();
-                // To delete the temp file if you only wanted a bitmap (less common with EXTRA_OUTPUT)
-                // new File(currentPhotoUri.getPath()).delete();
             }
-            // Option 2: If you did NOT provide EXTRA_OUTPUT (data will contain a thumbnail Bitmap)
             else if (data != null && data.getExtras() != null) {
                 Bundle extras = data.getExtras();
-                Bitmap imageBitmap = (Bitmap) extras.get("data"); // "data" is the key for the thumbnail
+                Bitmap imageBitmap = (Bitmap) extras.get("data");
                 if (imageBitmap != null) {
                     imageView.setImageBitmap(imageBitmap);
                     Toast.makeText(this, "Image thumbnail (legacy) received.", Toast.LENGTH_SHORT).show();
